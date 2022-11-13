@@ -1,47 +1,39 @@
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
-const formEl = document.querySelector('.form');
-console.log('formEl', formEl);
+const formRef = document.querySelector('.form');
 
-formEl.addEventListener('submit', promisesFabrica);
+function handleFormSubmit(e) {
+  e.preventDefault();
+  const formData = new FormData(formRef);
+  const { delay, step, amount } = Object.fromEntries(formData);
 
-function promisesFabrica(event) {
-  event.preventDefault();
-
-  let delay = Number(this.delay.value);
-  let step = Number(this.step.value);
-  let amount = Number(this.amount.value);
-  let count = 0;
-  let difference = delay - step;
-
-  const makeCount = setInterval(() => {
-    count += 1;
-    difference += step;
-
-    createPromise(count, difference).then(showSucces).catch(showError);
-
-    if (count === amount) {
-      clearInterval(makeCount);
-    }
-  }, step);
+  for (let i = 0; i < amount; i++) {
+    const delayTimer = +delay + +step * i;
+    setTimeout(() => {
+      createPromise(i + 1, delayTimer)
+        .then(({ position, delay }) => {
+          Notiflix.Notify.success(
+            `✅ Fulfilled promise ${position} in ${delay}ms`
+          );
+        })
+        .catch(({ position, delay }) => {
+          Notiflix.Notify.failure(
+            `❌ Rejected promise ${position} in ${delay}ms`
+          );
+        });
+    }, delayTimer);
+  }
 }
 
 function createPromise(position, delay) {
-  const shouldResolve = Math.random() > 0.3;
   return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (shouldResolve) {
-        resolve(`✅ Fulfilled promise ${position} in ${delay}ms`);
-      } else {
-        reject(`❌ Rejected promise ${position} in ${delay}ms`);
-      }
-    }, delay);
+    const shouldResolve = Math.random() > 0.3;
+    if (shouldResolve) {
+      resolve({ position, delay });
+    } else {
+      reject({ position, delay });
+    }
   });
 }
 
-function showSucces(value) {
-  Notify.success(value);
-}
-function showError(error) {
-  Notify.failure(error);
-}
+formRef.addEventListener('submit', handleFormSubmit);
